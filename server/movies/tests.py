@@ -2,11 +2,15 @@ from unittest.mock import patch, Mock
 from django.test import TestCase
 from rest_framework.test import APIClient
 from rest_framework import status
+from django.core.cache import cache as django_cache
 
 from .services import buscar_peliculas, OMDbServiceError
 
 
 class BuscarPeliculasServiceTests(TestCase):
+    
+    def setUp(self):
+        django_cache.clear()
 
     @patch('movies.services.os.getenv', return_value='fake-key')
     @patch('movies.services.requests.get')
@@ -61,6 +65,7 @@ class BuscarPeliculasServiceTests(TestCase):
 class MovieSearchViewTests(TestCase):
 
     def setUp(self):
+        django_cache.clear()    
         self.client = APIClient()
 
     def test_sin_query_devuelve_400(self):
@@ -90,3 +95,25 @@ class MovieSearchViewTests(TestCase):
 
         self.assertEqual(response.status_code, status.HTTP_502_BAD_GATEWAY)
         self.assertIn('error', response.data)
+        
+class CacheDeBusquedasTests(TestCase):
+
+    def setUp(self):
+        django_cache.clear()
+
+    @patch('movies.services.os.getenv', return_value='fake-key')
+    @patch('movies.services.requests.get')
+    def test_segunda_busqueda_no_vuelve_a_llamar_a_omdb(self, mock_get, mock_getenv):
+        mock_response = Mock()
+        mock_response.status_code = 200
+        mock_response.json.return_value = {
+            'Response': 'True',
+            'Search': [{'imdbID': 'tt1', 'Title': 'Batman', 'Year': '2005', 'Poster': 'url'}],
+            'totalResults': '1',
+        }
+        mock_get.return_value = mock_response
+
+        buscar_peliculas('batman')
+        buscar_peliculas('batman')
+
+        self.assertEqual(mock_get.call_count, 1)
