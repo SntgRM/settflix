@@ -3,6 +3,9 @@ import { useNavigate } from 'react-router-dom';
 import { Loader2, LogIn } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 
+const INPUT_CLASS =
+  'w-full px-3 py-2.5 rounded-lg bg-[#0a0a0a] border border-white/10 text-[#e9e4dc] placeholder:text-[#5a554e] focus:outline-none focus:border-[#ff6b1a]/40 focus:shadow-[0_0_0_3px_rgba(255,107,26,0.12)] transition-all disabled:opacity-50';
+
 const Login = () => {
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
@@ -60,7 +63,7 @@ const Login = () => {
               onChange={(e) => setUsername(e.target.value)}
               disabled={loading}
               autoComplete="username"
-              className="w-full px-3 py-2.5 rounded-lg bg-[#0a0a0a] border border-white/10 text-[#e9e4dc] placeholder:text-[#5a554e] focus:outline-none focus:border-[#ff6b1a]/40 focus:shadow-[0_0_0_3px_rgba(255,107,26,0.12)] transition-all disabled:opacity-50"
+              className={INPUT_CLASS}
               placeholder="Tu usuario"
             />
           </div>
@@ -75,7 +78,7 @@ const Login = () => {
               onChange={(e) => setPassword(e.target.value)}
               disabled={loading}
               autoComplete="current-password"
-              className="w-full px-3 py-2.5 rounded-lg bg-[#0a0a0a] border border-white/10 text-[#e9e4dc] placeholder:text-[#5a554e] focus:outline-none focus:border-[#ff6b1a]/40 focus:shadow-[0_0_0_3px_rgba(255,107,26,0.12)] transition-all disabled:opacity-50"
+              className={INPUT_CLASS}
               placeholder="••••••••"
             />
           </div>
