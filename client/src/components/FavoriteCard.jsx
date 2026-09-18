@@ -1,14 +1,7 @@
 import { useState, useRef, useEffect } from 'react';
 import { Star, Trash2, Check, Pencil, Save, X } from 'lucide-react';
-
-const hasValidPoster = (poster) =>
-  poster && poster !== 'N/A' && poster.trim() !== '';
-
-const PosterPlaceholder = () => (
-  <div className="w-full h-full bg-[#161616] flex items-center justify-center">
-    <span className="text-[#5a554e] text-xs">Sin póster</span>
-  </div>
-);
+import PosterImage from './PosterImage';
+import { getYear } from '../utils/movie';
 
 const FavoriteCard = ({ favorite, onUpdate, onDelete }) => {
   const [editing, setEditing] = useState(false);
@@ -16,7 +9,7 @@ const FavoriteCard = ({ favorite, onUpdate, onDelete }) => {
   const [saving, setSaving] = useState(false);
   const [confirming, setConfirming] = useState(false);
   const confirmTimer = useRef(null);
-  const valid = hasValidPoster(favorite.poster);
+  const year = getYear(favorite.anio);
 
   useEffect(() => {
     setNote(favorite.nota ?? 5);
@@ -44,16 +37,14 @@ const FavoriteCard = ({ favorite, onUpdate, onDelete }) => {
   return (
     <div className="rounded-lg border border-white/5 bg-[#161616] overflow-hidden transition-all duration-300 hover:border-[#ff6b1a]/30">
       <div className="aspect-[2/3] relative">
-        {valid ? (
-          <img
+        
+          <PosterImage
             src={favorite.poster}
             alt={favorite.titulo}
             loading="lazy"
             className="w-full h-full object-cover"
           />
-        ) : (
-          <PosterPlaceholder />
-        )}
+
         {favorite.nota != null && !editing && (
           <div className="absolute top-2 left-2 flex items-center gap-1 px-2 py-1 rounded-md bg-black/70 backdrop-blur-sm text-xs">
             <Star size={11} className="text-[#ff6b1a]" fill="currentColor" />
@@ -66,9 +57,7 @@ const FavoriteCard = ({ favorite, onUpdate, onDelete }) => {
         <p className="text-sm text-[#e9e4dc] font-medium leading-snug line-clamp-2">
           {favorite.titulo}
         </p>
-        {favorite.anio && favorite.anio !== 'N/A' && (
-          <p className="text-xs text-[#8f8a82] mt-0.5">{favorite.anio}</p>
-        )}
+        {year && <p className="text-xs text-[#8f8a82] mt-0.5">{year}</p>}
 
         {editing ? (
           <div className="mt-3 space-y-2">
