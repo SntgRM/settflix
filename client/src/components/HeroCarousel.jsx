@@ -1,29 +1,18 @@
 import { useState, useEffect } from 'react';
-import { Plus, Check, Loader2, Star } from 'lucide-react';
+import { Star } from 'lucide-react';
 import { useFavoriteAction } from '../hooks/useFavoriteAction';
-
-const hasValidPoster = (poster) =>
-  poster && poster !== 'N/A' && poster.trim() !== '';
+import { hasValidPoster, getYear } from '../utils/movie';
+import PosterImage from './PosterImage';
+import FavoriteIcon from './FavoriteIcon';
 
 const HeroSlide = ({ movie, active }) => {
-  const { add, loading, alreadyAdded } = useFavoriteAction();
+  const { add, loading, alreadyAdded, justAdded } = useFavoriteAction(movie);
   const valid = hasValidPoster(movie.poster);
-
-  const handleAdd = () => {
-    if (loading || alreadyAdded) return;
-    add({
-      id_pelicula: movie.id_pelicula,
-      titulo: movie.titulo,
-      anio: movie.anio,
-      poster: movie.poster,
-    });
-  };
 
   return (
     <div
-      className={`absolute inset-0 transition-opacity duration-700 ${
-        active ? 'opacity-100' : 'opacity-0 pointer-events-none'
-      }`}
+      className={`absolute inset-0 transition-opacity duration-700 ${active ? 'opacity-100' : 'opacity-0 pointer-events-none'
+        }`}
     >
       {valid ? (
         <img
@@ -32,21 +21,27 @@ const HeroSlide = ({ movie, active }) => {
           className="absolute inset-0 w-full h-full object-cover blur-3xl opacity-50 scale-125"
         />
       ) : (
-        <div className="absolute inset-0 bg-[#161616] opacity-50" />
+        <>
+          <div className="absolute inset-0 bg-gradient-to-br from-[#1f1f1f] via-[#161616] to-[#0a0a0a]" />
+          <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_25%_30%,rgba(255,107,26,0.16),transparent_60%)]" />
+        </>
       )}
       <div className="absolute inset-0 bg-gradient-to-t from-[#0a0a0a] via-[#0a0a0a]/50 to-[#0a0a0a]/20" />
       <div className="absolute inset-0 bg-gradient-to-r from-[#0a0a0a] via-[#0a0a0a]/40 to-transparent" />
 
       <div className="relative h-full flex items-center px-6 md:px-16">
-        {valid && (
-          <img
+        <div className="hidden md:block flex-shrink-0">
+          <PosterImage
             src={movie.poster}
             alt={movie.titulo}
-            className="hidden md:block w-[240px] h-[360px] object-cover rounded-xl shadow-2xl flex-shrink-0 border border-white/10"
+            className="w-[240px] h-[360px] object-cover rounded-xl shadow-2xl border border-white/10"
           />
-        )}
-        <div className={`w-full max-w-xl flex flex-col ${valid ? 'md:ml-10' : ''}`}>
-          {/* Badge: fixed slot */}
+        </div>
+
+        <div
+          className={`w-full max-w-xl flex flex-col md:ml-10 transition-all duration-700 delay-200 ${active ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'
+            }`}
+        >
           <div className="h-[26px] flex items-center mb-4">
             <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-[#ff6b1a]/15 border border-[#ff6b1a]/30 text-[#ff6b1a] text-xs font-medium">
               <Star size={12} fill="currentColor" />
@@ -54,34 +49,29 @@ const HeroSlide = ({ movie, active }) => {
             </span>
           </div>
 
-          {/* Title: fixed-height slot, always 2 lines tall, clamps overflow */}
           <h2 className="font-display text-4xl md:text-6xl text-[#e9e4dc] leading-tight mb-2 h-[88px] md:h-[144px] line-clamp-2 overflow-hidden">
             {movie.titulo}
           </h2>
 
-          {/* Year: fixed slot, reserved even when absent */}
           <p className="text-[#8f8a82] text-lg mb-6 h-[28px]">
-            {movie.anio && movie.anio !== 'N/A' ? movie.anio : '\u00A0'}
+            {getYear(movie.anio) ?? '\u00A0'}
           </p>
 
-          {/* Button: fixed slot */}
           <div>
             <button
-              onClick={handleAdd}
+              onClick={add}
               disabled={loading || alreadyAdded}
-              className={`flex items-center gap-2 px-5 py-2.5 rounded-lg font-medium text-sm transition-all duration-200 ${
-                alreadyAdded
+              className={`flex items-center gap-2 px-5 py-2.5 rounded-lg font-medium text-sm transition-all duration-200 active:scale-95 ${alreadyAdded
                   ? 'bg-[#ff6b1a]/20 border border-[#ff6b1a]/50 text-[#ff6b1a] cursor-default'
-                  : 'bg-[#ff6b1a] text-white hover:bg-[#ff8533] shadow-lg shadow-[#ff6b1a]/20'
-              } disabled:opacity-70`}
+                  : 'bg-[#ff6b1a] text-white hover:bg-[#ff8533] shadow-lg shadow-[#ff6b1a]/20 hover:shadow-[0_0_28px_rgba(255,107,26,0.45)]'
+                } disabled:opacity-70`}
             >
-              {loading ? (
-                <Loader2 size={16} className="animate-spin" />
-              ) : alreadyAdded ? (
-                <Check size={16} />
-              ) : (
-                <Plus size={16} />
-              )}
+              <FavoriteIcon
+                loading={loading}
+                added={alreadyAdded}
+                justAdded={justAdded}
+                size={16}
+              />
               {alreadyAdded ? 'Ya en favoritas' : 'Agregar a favoritas'}
             </button>
           </div>
@@ -120,15 +110,14 @@ const HeroCarousel = ({ movies }) => {
       ))}
 
       <div className="absolute bottom-6 left-1/2 -translate-x-1/2 flex items-center gap-2 z-20">
-        {movies.map((_, i) => (
+        {movies.map((m, i) => (
           <button
-            key={i}
+            key={m.id_pelicula}
             onClick={() => setCurrent(i)}
-            className={`h-2 rounded-full transition-all duration-300 ${
-              i === current
+            className={`h-2 rounded-full transition-all duration-300 ${i === current
                 ? 'w-8 bg-[#ff6b1a]'
                 : 'w-2 bg-[#5a554e] hover:bg-[#8f8a82]'
-            }`}
+              }`}
             aria-label={`Ir a la película ${i + 1}`}
           />
         ))}
