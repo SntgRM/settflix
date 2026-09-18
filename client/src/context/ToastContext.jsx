@@ -1,9 +1,9 @@
-import { createContext, useContext, useState, useCallback, useMemo } from 'react';
+import { createContext, useContext, useState, useCallback, useMemo, useRef, useEffect } from 'react';
 import { CheckCircle2, AlertCircle, Info, X } from 'lucide-react';
 
 const ToastContext = createContext(null);
 
-let idCounter = 0;
+const TOAST_DURATION_MS = 4000;
 
 const TOAST_CONFIG = {
   success: {
@@ -31,6 +31,7 @@ const ToastItem = ({ toast, onClose }) => {
       <span className="text-sm">{toast.message}</span>
       <button
         onClick={onClose}
+        aria-label="Cerrar notificación"
         className="absolute right-2 top-1/2 -translate-y-1/2 text-[#5a554e] hover:text-[#e9e4dc] transition-colors"
       >
         <X size={14} />
@@ -41,17 +42,33 @@ const ToastItem = ({ toast, onClose }) => {
 
 export const ToastProvider = ({ children }) => {
   const [toasts, setToasts] = useState([]);
+  const nextId = useRef(0);
+  const timers = useRef(new Map());
 
   const removeToast = useCallback((id) => {
+    clearTimeout(timers.current.get(id));
+    timers.current.delete(id);
     setToasts((prev) => prev.filter((t) => t.id !== id));
   }, []);
 
-  const addToast = useCallback((type, message) => {
-    const id = ++idCounter;
-    setToasts((prev) => [...prev, { id, type, message }]);
-    setTimeout(() => {
-      setToasts((prev) => prev.filter((t) => t.id !== id));
-    }, 4000);
+  const addToast = useCallback(
+    (type, message) => {
+      const id = ++nextId.current;
+      setToasts((prev) => [...prev, { id, type, message }]);
+      timers.current.set(
+        id,
+        setTimeout(() => removeToast(id), TOAST_DURATION_MS)
+      );
+    },
+    [removeToast]
+  );
+
+  useEffect(() => {
+    const pending = timers.current;
+    return () => {
+      pending.forEach(clearTimeout);
+      pending.clear();
+    };
   }, []);
 
   const toast = useMemo(
@@ -66,7 +83,10 @@ export const ToastProvider = ({ children }) => {
   return (
     <ToastContext.Provider value={toast}>
       {children}
-      <div className="fixed bottom-6 right-6 z-[100] flex flex-col gap-3">
+      <div
+        aria-live="polite"
+        className="fixed bottom-6 right-6 z-[100] flex flex-col gap-3"
+      >
         {toasts.map((t) => (
           <ToastItem key={t.id} toast={t} onClose={() => removeToast(t.id)} />
         ))}
