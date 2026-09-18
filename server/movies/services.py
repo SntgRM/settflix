@@ -1,8 +1,10 @@
 import os
 import requests
+from django.core.cache import cache
 
 OMDB_BASE_URL = 'https://www.omdbapi.com/'
 TIMEOUT = 5
+CACHE_TTL_SEGUNDOS = 60 * 15
 
 
 class OMDbServiceError(Exception):
@@ -18,9 +20,16 @@ def buscar_peliculas(query, page=1):
     if not query or not query.strip():
         raise OMDbServiceError('El término de búsqueda no puede estar vacío.')
 
+    query_normalizada = query.strip().lower()
+    cache_key = f'omdb_search:{query_normalizada}:{page}'
+
+    cached = cache.get(cache_key)
+    if cached is not None:
+        return cached
+
     params = {
         'apikey': api_key,
-        's': query.strip(),
+        's': query_normalizada,
         'page': page,
     }
 
@@ -59,11 +68,15 @@ def buscar_peliculas(query, page=1):
     except (TypeError, ValueError):
         total = len(resultados)
 
-    return {
+    resultado = {
         'resultados': resultados,
         'total': total,
         'pagina': int(page),
     }
+
+    cache.set(cache_key, resultado, CACHE_TTL_SEGUNDOS)
+
+    return resultado
 
 
 def obtener_pelicula_por_id(id_pelicula):
@@ -74,6 +87,11 @@ def obtener_pelicula_por_id(id_pelicula):
 
     if not id_pelicula:
         raise OMDbServiceError('El id de la película es obligatorio.')
+
+    cache_key = f'omdb_detail:{id_pelicula}'
+    cached = cache.get(cache_key)
+    if cached is not None:
+        return cached
 
     params = {
         'apikey': api_key,
@@ -98,9 +116,13 @@ def obtener_pelicula_por_id(id_pelicula):
     if data.get('Response') == 'False':
         raise OMDbServiceError(data.get('Error', 'Película no encontrada.'))
 
-    return {
+    resultado = {
         'id_pelicula': data.get('imdbID'),
         'titulo': data.get('Title'),
         'anio': data.get('Year'),
         'poster': data.get('Poster'),
     }
+
+    cache.set(cache_key, resultado, CACHE_TTL_SEGUNDOS)
+
+    return resultado
