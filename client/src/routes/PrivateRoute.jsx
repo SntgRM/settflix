@@ -1,10 +1,10 @@
-import { Navigate } from 'react-router-dom';
+import { Navigate, Outlet } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 
-const PrivateRoute = ({ children }) => {
+// Ruta "layout": protege todas las rutas hijas con un solo chequeo de sesión.
+const PrivateRoute = () => {
   const { user } = useAuth();
-  if (!user) return <Navigate to="/login" replace />;
-  return children;
+  return user ? <Outlet /> : <Navigate to="/login" replace />;
 };
 
 export default PrivateRoute;
