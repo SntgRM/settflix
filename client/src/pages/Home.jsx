@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo, useCallback } from 'react';
+import { useState, useEffect, useMemo, useCallback, useRef } from 'react';
 import { Search, Film, Loader2 } from 'lucide-react';
 import HeroCarousel from '../components/HeroCarousel';
 import MovieRow from '../components/MovieRow';
@@ -8,14 +8,12 @@ import ErrorMessage from '../components/ErrorMessage';
 import { searchMovies } from '../api/movies';
 
 const SEED_CATEGORIES = [
-  { term: 'batman', title: 'Universo de Batman' },
-  { term: 'avengers', title: 'Los Vengadores' },
-  { term: 'star wars', title: 'Saga Star Wars' },
-  { term: 'harry potter', title: 'El Mundo de Harry Potter' },
-  { term: 'fast and furious', title: 'Alta Velocidad' },
-  { term: 'mission impossible', title: 'Misión Imposible' },
   { term: 'spider man', title: 'El Hombre Araña' },
-  { term: 'john wick', title: 'John Wick' },
+  { term: 'avengers', title: 'Los Vengadores' },
+  { term: 'the purge', title: 'La Purga' },
+  { term: 'mission impossible', title: 'Misión Imposible' },
+  { term: 'superman', title: 'Superman' },
+  { term: 'insidious', title: 'La Noche del Demonio' },
 ];
 
 const Home = ({ searchQuery }) => {
@@ -35,6 +33,11 @@ const Home = ({ searchQuery }) => {
   const [total, setTotal] = useState(0);
   const [loadingMore, setLoadingMore] = useState(false);
   const [retryCount, setRetryCount] = useState(0);
+  const latestQuery = useRef(searchQuery);
+
+  useEffect(() => {
+    latestQuery.current = searchQuery;
+  }, [searchQuery]);
 
   const loadCategory = useCallback(async (index, term) => {
     try {
@@ -117,14 +120,15 @@ const Home = ({ searchQuery }) => {
   const loadMore = async () => {
     if (loadingMore || !hasMore) return;
     setLoadingMore(true);
+    const query = searchQuery;
     try {
       const next = page + 1;
-      const data = await searchMovies(searchQuery, next);
+      const data = await searchMovies(query, next);
+      if (latestQuery.current !== query) return;
       setSearchResults((prev) => [...prev, ...(data.resultados || [])]);
       setPage(next);
       setTotal(data.total || 0);
     } catch {
-      // keep existing results; user can retry
     } finally {
       setLoadingMore(false);
     }
@@ -132,7 +136,6 @@ const Home = ({ searchQuery }) => {
 
   if (isSearching) {
     return (
-      <div className="min-h-screen bg-[#0a0a0a]">
         <div className="px-4 md:px-8 py-8">
           <div className="flex items-center gap-2 mb-6">
             <Search size={20} className="text-[#ff6b1a]" />
@@ -184,15 +187,14 @@ const Home = ({ searchQuery }) => {
             </>
           )}
         </div>
-      </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-[#0a0a0a]">
+    <>
       {heroMovies.length > 0 && <HeroCarousel movies={heroMovies} />}
 
-      <div className="pb-12">
+      <div className="pt-6 pb-12">
         {categories.map((cat, i) => (
           <div key={cat.term} className={i > 0 ? 'mt-6' : ''}>
             <MovieRow
@@ -205,7 +207,7 @@ const Home = ({ searchQuery }) => {
           </div>
         ))}
       </div>
-    </div>
+    </>
   );
 };
 
