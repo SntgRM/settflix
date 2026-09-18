@@ -1,48 +1,29 @@
-import { createContext, useContext, useState, useEffect, useCallback } from 'react';
+import { createContext, useContext, useState, useEffect, useCallback, useMemo } from 'react';
 import { login as apiLogin } from '../api/auth';
+import { session } from '../api/session';
 
 const AuthContext = createContext(null);
 
 export const AuthProvider = ({ children }) => {
-  const [user, setUser] = useState(() => {
-    try {
-      const stored = localStorage.getItem('user');
-      return stored ? JSON.parse(stored) : null;
-    } catch {
-      return null;
-    }
-  });
+  const [user, setUser] = useState(() => session.getUser());
 
-  const login = async (username, password) => {
+  const login = useCallback(async (username, password) => {
     const data = await apiLogin(username, password);
-    localStorage.setItem('access', data.access);
-    localStorage.setItem('refresh', data.refresh);
-    localStorage.setItem('user', JSON.stringify(data.user));
+    session.save(data);
     setUser(data.user);
     return data;
-  };
+  }, []);
 
   const logout = useCallback(() => {
-    localStorage.removeItem('access');
-    localStorage.removeItem('refresh');
-    localStorage.removeItem('user');
+    session.clear();
     setUser(null);
   }, []);
 
-  useEffect(() => {
-    const handler = () => {
-      logout();
-      window.location.href = '/login';
-    };
-    window.addEventListener('settflix:session-expired', handler);
-    return () => window.removeEventListener('settflix:session-expired', handler);
-  }, [logout]);
+  useEffect(() => session.onExpired(logout), [logout]);
 
-  return (
-    <AuthContext.Provider value={{ user, login, logout }}>
-      {children}
-    </AuthContext.Provider>
-  );
+  const value = useMemo(() => ({ user, login, logout }), [user, login, logout]);
+
+  return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 };
 
 export const useAuth = () => {
