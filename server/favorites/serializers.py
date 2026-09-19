@@ -14,11 +14,11 @@ class FavoritaSerializer(serializers.ModelSerializer):
             'nota',
             'fecha_agregado',
         ]
-        read_only_fields = ['id', 'fecha_agregado']
+        read_only_fields = ['id', 'titulo', 'anio', 'poster','fecha_agregado']
 
     def validate_nota(self, value):
-        if value is not None and not (1 <= value <= 10):
-            raise serializers.ValidationError('La nota debe estar entre 1 y 10.')
+        if value is not None and not (1 <= value <= 5):
+            raise serializers.ValidationError('La nota debe estar entre 1 y 5.')
         return value
 
     def validate_id_pelicula(self, value):
@@ -35,6 +35,6 @@ class FavoritaUpdateSerializer(serializers.ModelSerializer):
         read_only_fields = ['id']
 
     def validate_nota(self, value):
-        if value is not None and not (1 <= value <= 10):
-            raise serializers.ValidationError('La nota debe estar entre 1 y 10.')
+        if value is not None and not (1 <= value <= 5):
+            raise serializers.ValidationError('La nota debe estar entre 1 y 5.')
         return value
