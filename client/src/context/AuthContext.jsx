@@ -1,5 +1,5 @@
 import { createContext, useContext, useState, useEffect, useCallback, useMemo } from 'react';
-import { login as apiLogin } from '../api/auth';
+import { login as apiLogin, logout as apiLogout } from '../api/auth';
 import { session } from '../api/session';
 
 const AuthContext = createContext(null);
@@ -14,14 +14,31 @@ export const AuthProvider = ({ children }) => {
     return data;
   }, []);
 
-  const logout = useCallback(() => {
+  const clearSession = useCallback(() => {
     session.clear();
     setUser(null);
   }, []);
 
-  useEffect(() => session.onExpired(logout), [logout]);
+  const logout = useCallback(async () => {
+    const refresh = session.getRefresh();
 
-  const value = useMemo(() => ({ user, login, logout }), [user, login, logout]);
+    try {
+      if (refresh) {
+        await apiLogout(refresh);
+      }
+    } finally {
+      clearSession();
+    }
+  }, [clearSession]);
+
+  useEffect(
+    () => session.onExpired(clearSession),
+    [clearSession]
+  );
+
+  const value = useMemo(
+    () => ({ user, login, logout }), 
+    [user, login, logout]);
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 };
