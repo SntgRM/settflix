@@ -1,16 +1,5 @@
 import { useEffect } from 'react';
 
-const modalAnimationStyles = `
-  @keyframes confirmModalBackdropIn {
-    from { opacity: 0; }
-    to { opacity: 1; }
-  }
-  @keyframes confirmModalPanelIn {
-    from { opacity: 0; transform: translateY(8px) scale(0.97); }
-    to { opacity: 1; transform: translateY(0) scale(1); }
-  }
-`;
-
 const ConfirmModal = ({
   open,
   title,
@@ -34,7 +23,6 @@ const ConfirmModal = ({
 
   return (
     <>
-      <style>{modalAnimationStyles}</style>
       <div
         className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/70 backdrop-blur-sm p-4"
         style={{ animation: 'confirmModalBackdropIn 180ms ease-out both' }}
