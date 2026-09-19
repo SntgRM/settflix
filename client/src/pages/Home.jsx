@@ -11,9 +11,8 @@ const SEED_CATEGORIES = [
   { term: 'spider man', title: 'El Hombre Araña' },
   { term: 'avengers', title: 'Los Vengadores' },
   { term: 'the purge', title: 'La Purga' },
-  { term: 'mission impossible', title: 'Misión Imposible' },
   { term: 'superman', title: 'Superman' },
-  { term: 'insidious', title: 'La Noche del Demonio' },
+  { term: 'terrifier', title: 'Terrifier' },
 ];
 
 const Home = ({ searchQuery }) => {
@@ -136,7 +135,7 @@ const Home = ({ searchQuery }) => {
 
   if (isSearching) {
     return (
-        <div className="px-4 md:px-8 py-8">
+        <div className="mx-auto w-full max-w-[1600px] px-4 py-8 sm:px-6 lg:px-10 2xl:px-14">
           <div className="flex items-center gap-2 mb-6">
             <Search size={20} className="text-[#ff6b1a]" />
             <h1 className="font-display text-2xl text-[#e9e4dc]">
@@ -164,7 +163,7 @@ const Home = ({ searchQuery }) => {
             </div>
           ) : (
             <>
-              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4 py-6">
+              <div className="mx-auto grid w-full max-w-[1420px] grid-cols-2 justify-items-center gap-x-3 gap-y-7 py-6 sm:grid-cols-3 sm:gap-x-5 sm:gap-y-8 md:grid-cols-4 lg:grid-cols-5 lg:gap-x-6 xl:grid-cols-5 2xl:grid-cols-5">
                 {searchResults.map((movie) => (
                   <MovieCard key={movie.id_pelicula} movie={movie} />
                 ))}
