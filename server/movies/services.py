@@ -2,14 +2,16 @@ import os
 import requests
 from django.core.cache import cache
 
-OMDB_BASE_URL = 'https://www.omdbapi.com/'
+OMDB_BASE_URL = os.getenv('OMDB_BASE_URL')
 TIMEOUT = 5
-CACHE_TTL_SEGUNDOS = 60 * 15
+CACHE_TTL_SEGUNDOS = os.getenv('OMDB_CACHE_TTL')
 
 
 class OMDbServiceError(Exception):
     pass
 
+class OMDbNotFoundError(Exception):
+    pass
 
 def buscar_peliculas(query, page=1):
     api_key = os.getenv('OMDB_API_KEY')
