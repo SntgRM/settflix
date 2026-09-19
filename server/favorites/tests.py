@@ -150,3 +150,43 @@ class FavoritaDetailViewTests(TestCase):
         response = self.client.delete(f'/api/favorites/{self.favorita_de_ana.id}/')
         self.assertEqual(response.status_code, status.HTTP_204_NO_CONTENT)
         self.assertFalse(Favorita.objects.filter(id=self.favorita_de_ana.id).exists())
+
+class FavoritaFiltrosYOrdenTests(TestCase):
+
+    def setUp(self):
+        self.client = APIClient()
+        self.user = User.objects.create_user(username='ana', password='clave12345')
+        self.token = get_access_token(self.user)
+        self.client.credentials(HTTP_AUTHORIZATION=f'Bearer {self.token}')
+
+        Favorita.objects.create(
+            usuario=self.user, id_pelicula='tt1', titulo='Vieja', anio='2001', nota=2
+        )
+        Favorita.objects.create(
+            usuario=self.user, id_pelicula='tt2', titulo='Nueva', anio='2020', nota=5
+        )
+
+    def test_filtra_por_anio(self):
+        response = self.client.get('/api/favorites/?anio=2020')
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(len(response.data), 1)
+        self.assertEqual(response.data[0]['titulo'], 'Nueva')
+
+    def test_filtra_por_nota_minima(self):
+        response = self.client.get('/api/favorites/?nota_min=3')
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(len(response.data), 1)
+        self.assertEqual(response.data[0]['titulo'], 'Nueva')
+
+    def test_ordena_por_nota_ascendente(self):
+        response = self.client.get('/api/favorites/?ordering=nota')
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(
+            [f['titulo'] for f in response.data],
+            ['Vieja', 'Nueva'],
+        )
+
+    def test_ordering_invalido_usa_default_sin_romper(self):
+        response = self.client.get('/api/favorites/?ordering=algo_que_no_existe')
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(len(response.data), 2)
