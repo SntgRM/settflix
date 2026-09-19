@@ -3,7 +3,7 @@ const SESSION_EXPIRED_EVENT = 'settflix:session-expired';
 
 const read = (key) => {
   try {
-    return localStorage.getItem(key);
+    return sessionStorage.getItem(key);
   } catch {
     return null;
   }
@@ -11,14 +11,14 @@ const read = (key) => {
 
 const write = (key, value) => {
   try {
-    localStorage.setItem(key, value);
+    sessionStorage.setItem(key, value);
   } catch {
   }
 };
 
 const remove = (key) => {
   try {
-    localStorage.removeItem(key);
+    sessionStorage.removeItem(key);
   } catch {
   }
 };
