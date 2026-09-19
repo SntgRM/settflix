@@ -23,7 +23,7 @@ class Favorita(models.Model):
     nota = models.PositiveSmallIntegerField(
         blank=True,
         null=True,
-        help_text='Calificación personal, por ejemplo de 1 a 10'
+        help_text='Calificación personal, por ejemplo de 1 a 5'
     )
 
     fecha_agregado = models.DateTimeField(auto_now_add=True)
@@ -33,7 +33,14 @@ class Favorita(models.Model):
             models.UniqueConstraint(
                 fields=['usuario', 'id_pelicula'],
                 name='unica_favorita_por_usuario'
-            )
+            ),
+            models.CheckConstraint(
+                condition=(
+                    models.Q(nota__isnull=True) |
+                    models.Q(nota__gte=1, nota__lte=5)
+                ),
+                name='nota_favorita_entre_1_y_5',
+            ),
         ]
         ordering = ['-fecha_agregado']
 
