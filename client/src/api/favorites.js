@@ -5,8 +5,12 @@ export const getFavorites = async () => {
   return res.data;
 };
 
-export const addFavorite = async (movie) => {
-  const res = await axiosClient.post('/favorites/', movie);
+export const addFavorite = async (idPelicula, nota = null) => {
+  const res = await axiosClient.post('/favorites/', {
+    id_pelicula: idPelicula,
+    nota,
+  });
+
   return res.data;
 };
 
