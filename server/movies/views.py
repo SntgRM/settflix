@@ -1,14 +1,12 @@
 from rest_framework.views import APIView
 from rest_framework.response import Response
-from rest_framework.permissions import AllowAny
+from rest_framework.permissions import IsAuthenticated
 from rest_framework import status
-
 from .services import buscar_peliculas, OMDbServiceError
-
 
 class MovieSearchView(APIView):
     
-    permission_classes = [AllowAny]
+    permission_classes = [IsAuthenticated]
 
     def get(self, request):
         query = request.query_params.get('q', '').strip()
@@ -22,17 +20,34 @@ class MovieSearchView(APIView):
 
         try:
             page = int(page_param)
-            if page < 1:
-                page = 1
         except (TypeError, ValueError):
-            page = 1
+            return Response(
+                {
+                    'error':
+                    'El parámetro "page" debe ser un número entero.'
+                },
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        if not 1 <= page <= 100:
+            return Response(
+                {
+                    'error':
+                    'El parámetro "page" debe estar entre 1 y 100.'
+                },
+                status=status.HTTP_400_BAD_REQUEST
+            )
 
         try:
             data = buscar_peliculas(query, page)
-        except OMDbServiceError as e:
+
+        except OMDbServiceError as exc:
             return Response(
-                {'error': str(e)},
+                {'error': str(exc)},
                 status=status.HTTP_502_BAD_GATEWAY
             )
 
-        return Response(data, status=status.HTTP_200_OK)
+        return Response(
+            data,
+            status=status.HTTP_200_OK
+        )
