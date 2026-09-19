@@ -66,7 +66,7 @@ const MovieRow = ({ title, loading, error, resultados, onRetry }) => {
           {loading
             ? Array.from({ length: 10 }).map((_, i) => <SkeletonCard key={i} />)
             : resultados.map((movie) => (
-                <MovieCard key={movie.id_pelicula} movie={movie} />
+                <MovieCard key={movie.id_pelicula} movie={movie} compact />
               ))}
         </div>
         <ScrollButton direction="right" onClick={() => scroll('right')} />
