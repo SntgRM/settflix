@@ -29,6 +29,7 @@ class Favorita(models.Model):
     fecha_agregado = models.DateTimeField(auto_now_add=True)
 
     class Meta:
+        db_table = 'favoritas'
         constraints = [
             models.UniqueConstraint(
                 fields=['usuario', 'id_pelicula'],
