@@ -32,7 +32,7 @@ class FavoritaListCreateViewTests(TestCase):
             'titulo': 'Batman Begins',
             'anio': '2005',
             'poster': 'https://poster.url',
-            'nota': 9,
+            'nota': 5,
         }
         response = self.client.post('/api/favorites/', payload, format='json')
 
@@ -103,7 +103,7 @@ class FavoritaDetailViewTests(TestCase):
         self.token = get_access_token(self.user)
 
         self.favorita_de_ana = Favorita.objects.create(
-            usuario=self.user, id_pelicula='tt1', titulo='Película de Ana', anio='2020', nota=8
+            usuario=self.user, id_pelicula='tt1', titulo='Película de Ana', anio='2020', nota=4
         )
         self.favorita_de_luis = Favorita.objects.create(
             usuario=self.otro_usuario, id_pelicula='tt2', titulo='Película de Luis', anio='2021'
@@ -116,12 +116,12 @@ class FavoritaDetailViewTests(TestCase):
         self.auth()
         response = self.client.patch(
             f'/api/favorites/{self.favorita_de_ana.id}/',
-            {'nota': 10},
+            {'nota': 5},
             format='json'
         )
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.favorita_de_ana.refresh_from_db()
-        self.assertEqual(self.favorita_de_ana.nota, 10)
+        self.assertEqual(self.favorita_de_ana.nota, 5)
 
     def test_no_puede_ver_favorita_de_otro_usuario(self):
         self.auth()
