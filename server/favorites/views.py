@@ -6,13 +6,48 @@ from .models import Favorita
 from .serializers import FavoritaSerializer, FavoritaUpdateSerializer
 from movies.services import obtener_pelicula_por_id, OMDbServiceError, OMDbNotFoundError
 
+ORDERING_FIELDS = {
+    'fecha_agregado': 'fecha_agregado',
+    '-fecha_agregado': '-fecha_agregado',
+    'anio': 'anio',
+    '-anio': '-anio',
+    'nota': 'nota',
+    '-nota': '-nota',
+    'titulo': 'titulo',
+    '-titulo': '-titulo',
+}
+DEFAULT_ORDERING = '-fecha_agregado'
+
+
 class FavoritaListCreateView(generics.ListCreateAPIView):
     
     serializer_class = FavoritaSerializer
     permission_classes = [IsAuthenticated]
 
     def get_queryset(self):
-        return Favorita.objects.filter(usuario=self.request.user)
+        queryset = Favorita.objects.filter(usuario=self.request.user)
+        params = self.request.query_params
+
+        anio = params.get('anio')
+        if anio:
+            queryset = queryset.filter(anio=anio)
+
+        nota_min = params.get('nota_min')
+        if nota_min:
+            try:
+                queryset = queryset.filter(nota__gte=int(nota_min))
+            except ValueError:
+                pass
+
+        nota_max = params.get('nota_max')
+        if nota_max:
+            try:
+                queryset = queryset.filter(nota__lte=int(nota_max))
+            except ValueError:
+                pass
+
+        ordering = ORDERING_FIELDS.get(params.get('ordering'), DEFAULT_ORDERING)
+        return queryset.order_by(ordering)
 
     def create(self, request, *args, **kwargs):
         serializer = self.get_serializer(data=request.data)
