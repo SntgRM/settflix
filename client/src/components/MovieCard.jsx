@@ -3,7 +3,7 @@ import { getYear } from '../utils/movie';
 import PosterImage from './PosterImage';
 import FavoriteIcon from './FavoriteIcon';
 
-const MovieCard = ({ movie }) => {
+const MovieCard = ({ movie, compact = false }) => {
   const { add, loading, alreadyAdded, justAdded } = useFavoriteAction(movie);
   const year = getYear(movie.anio);
 
@@ -14,15 +14,17 @@ const MovieCard = ({ movie }) => {
   };
 
   return (
-    <div className="relative flex-shrink-0 w-[140px] md:w-[180px] rounded-lg border border-white/5 shadow-md bg-[#161616] overflow-visible transition-all duration-300 ease-out hover:-translate-y-2 hover:scale-[1.04] hover:z-20 hover:border-[#ff6b1a]/50 hover:shadow-[0_20px_40px_-12px_rgba(255,107,26,0.35)] group/card">
-      <div className="rounded-lg overflow-hidden aspect-[2/3] relative">
+    <article className={`group relative w-full min-w-0 overflow-hidden rounded-2xl border border-white/[0.08] bg-[#171719] shadow-[0_16px_40px_rgba(0,0,0,.22)] transition duration-300 hover:z-20 hover:-translate-y-1 hover:border-[#ff7a2f]/45 hover:shadow-[0_18px_48px_rgba(255,109,36,.14)] ${
+      compact ? 'flex-none w-[170px] sm:w-[190px] md:w-[210px] lg:w-[220px]' : ''
+    }`}>
+      <div className="relative aspect-[2/3] overflow-hidden bg-white/5">
         <PosterImage
           src={movie.poster}
           alt={movie.titulo}
           loading="lazy"
-          className="w-full h-full object-cover"
+          className="h-full w-full object-cover transition duration-500 group-hover:scale-105"
         />
-        <div className="absolute inset-x-0 bottom-0 h-1/2 bg-gradient-to-t from-black/80 via-black/20 to-transparent opacity-0 group-hover/card:opacity-100 transition-opacity duration-300" />
+        <div className="absolute inset-0 bg-gradient-to-t from-black/75 via-black/5 to-transparent" />
       </div>
 
       <button
@@ -39,13 +41,13 @@ const MovieCard = ({ movie }) => {
         <FavoriteIcon loading={loading} added={alreadyAdded} justAdded={justAdded} />
       </button>
 
-      <div className="mt-2 px-1 pb-1">
-        <p className="text-sm text-[#e9e4dc] font-medium leading-snug line-clamp-2">
+      <div className="p-3.5 md:p-4">
+        <h2 className="line-clamp-2 min-h-10 text-[13px] font-semibold leading-5 text-[#f5eee8] md:min-h-12 md:text-[15px] md:leading-6">
           {movie.titulo}
-        </p>
-        {year && <p className="text-xs text-[#8f8a82] mt-0.5">{year}</p>}
+        </h2>
+        {year && <p className="mt-1 text-[11px] font-medium text-[#9b928c] md:text-xs">{year}</p>}
       </div>
-    </div>
+    </article>
   );
 };
 
