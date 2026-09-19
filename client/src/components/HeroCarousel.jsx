@@ -61,7 +61,7 @@ const HeroSlide = ({ movie, active }) => {
             <button
               onClick={add}
               disabled={loading || alreadyAdded}
-              className={`flex items-center gap-2 px-5 py-2.5 rounded-lg font-medium text-sm transition-all duration-200 active:scale-95 ${alreadyAdded
+              className={`cursor-pointer flex items-center gap-2 px-5 py-2.5 rounded-lg font-medium text-sm transition-all duration-200 active:scale-95 ${alreadyAdded
                   ? 'bg-[#ff6b1a]/20 border border-[#ff6b1a]/50 text-[#ff6b1a] cursor-default'
                   : 'bg-[#ff6b1a] text-white hover:bg-[#ff8533] shadow-lg shadow-[#ff6b1a]/20 hover:shadow-[0_0_28px_rgba(255,107,26,0.45)]'
                 } disabled:opacity-70`}
@@ -89,7 +89,7 @@ const HeroCarousel = ({ movies }) => {
     if (paused || movies.length <= 1) return;
     const timer = setInterval(() => {
       setCurrent((c) => (c + 1) % movies.length);
-    }, 6000);
+    }, 4000);
     return () => clearInterval(timer);
   }, [paused, movies.length]);
 
