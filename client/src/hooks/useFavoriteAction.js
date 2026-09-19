@@ -3,32 +3,35 @@ import { addFavorite } from '../api/favorites';
 import { useToast } from '../context/ToastContext';
 import { useFavorites } from '../context/FavoritesContext';
 
-const toFavoritePayload = (movie) => ({
-  id_pelicula: movie.id_pelicula,
-  titulo: movie.titulo,
-  anio: movie.anio,
-  poster: movie.poster,
-});
-
 export const useFavoriteAction = (movie) => {
   const [loading, setLoading] = useState(false);
   const [justAdded, setJustAdded] = useState(false);
+
   const toast = useToast();
-  const { isFavorite, addToFavoritesList, reload } = useFavorites();
+  const {
+    isFavorite,
+    addToFavoritesList,
+    reload,
+  } = useFavorites();
 
   const alreadyAdded = isFavorite(movie.id_pelicula);
 
   const add = useCallback(async () => {
     if (loading || alreadyAdded) return;
+
     setLoading(true);
-    const payload = toFavoritePayload(movie);
+
     try {
-      const created = await addFavorite(payload);
-      addToFavoritesList({ ...payload, ...created });
+      const created = await addFavorite(movie.id_pelicula);
+
+      addToFavoritesList(created);
+
       setJustAdded(true);
+
       toast.success('Agregada a tus favoritas');
     } catch (error) {
       const status = error.response?.status;
+
       if (status === 409) {
         reload();
         toast.info('Esta película ya está en tus favoritas');
@@ -42,7 +45,19 @@ export const useFavoriteAction = (movie) => {
     } finally {
       setLoading(false);
     }
-  }, [loading, alreadyAdded, movie, addToFavoritesList, reload, toast]);
+  }, [
+    loading,
+    alreadyAdded,
+    movie.id_pelicula,
+    addToFavoritesList,
+    reload,
+    toast,
+  ]);
 
-  return { add, loading, alreadyAdded, justAdded };
+  return {
+    add,
+    loading,
+    alreadyAdded,
+    justAdded,
+  };
 };
