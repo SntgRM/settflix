@@ -1,0 +1,94 @@
+org: santy01052007
+service: server
+frameworkVersion: '4'
+useDotenv: true
+
+plugins:
+  - serverless-offline
+
+provider:
+  name: aws
+  runtime: python3.13
+  architecture: arm64       
+  region: us-east-1
+  stage: ${opt:stage, 'dev'}
+  memorySize: 256            
+  timeout: 10                
+  logRetentionInDays: 7
+
+  httpApi:
+    cors:
+      allowedOrigins:
+        - http://localhost:3000
+        - http://127.0.0.1:3000
+        - http://localhost:5173
+        - http://127.0.0.1:5173
+      allowedHeaders: [Content-Type, Authorization]
+      allowedMethods: [GET, POST, PUT, PATCH, DELETE, OPTIONS]
+      maxAge: 86400
+
+  environment:
+    SECRET_KEY: ${env:SECRET_KEY}
+    DB_HOST: ${env:DB_HOST, '127.0.0.1'}
+    DB_PORT: ${env:DB_PORT, '3306'}
+    DB_NAME: ${env:DB_NAME, 'settflix_db'}
+    DB_USER: ${env:DB_USER, 'settflix_user'}
+    DB_PASSWORD: ${env:DB_PASSWORD}
+    OMDB_BASE_URL: ${env:OMDB_BASE_URL, 'https://www.omdbapi.com/'}
+    OMDB_API_KEY: ${env:OMDB_API_KEY, ''}
+    OMDB_CACHE_TTL: ${env:OMDB_CACHE_TTL, '900'}
+
+package:
+  patterns: 
+    - '!**'
+    - 'src/**'
+    - '!**/__pycache__/**'
+
+custom:
+  pythonRequirements:
+    dockerizePip: false   
+    slim: true            
+  serverless-offline:
+    httpPort: 8000        
+    noPrependStageInUrl: true
+
+functions:
+  health:
+    handler: src/handlers/health.handler
+    events:
+      - httpApi: { method: GET, path: /api/health/ }
+
+  login:
+    handler: src/handlers/auth.login
+    memorySize: 1024      
+    events:
+      - httpApi: { method: POST, path: /api/auth/login/ }
+
+  refresh:
+    handler: src/handlers/auth.refresh
+    events:
+      - httpApi: { method: POST, path: /api/auth/token/refresh/ }
+
+  logout:
+    handler: src/handlers/auth.logout
+    events:
+      - httpApi: { method: POST, path: /api/auth/logout/ }
+
+  moviesSearch:
+    handler: src/handlers/movies.search
+    events:
+      - httpApi: { method: GET, path: /api/movies/search/ }
+
+  favorites:            
+    handler: src/handlers/favorites.collection
+    events:
+      - httpApi: { method: GET, path: /api/favorites/ }
+      - httpApi: { method: POST, path: /api/favorites/ }
+
+  favoriteDetail:       
+    handler: src/handlers/favorites.detail
+    events:
+      - httpApi: { method: GET, path: '/api/favorites/{id}/' }
+      - httpApi: { method: PUT, path: '/api/favorites/{id}/' }
+      - httpApi: { method: PATCH, path: '/api/favorites/{id}/' }
+      - httpApi: { method: DELETE, path: '/api/favorites/{id}/' }
