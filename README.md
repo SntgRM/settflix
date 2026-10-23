@@ -1,220 +1,299 @@
 # Settflix
 
-Mini-plataforma de películas desarrollada como prueba técnica Full Stack.
+Mini-plataforma de películas (prueba técnica Full Stack).
 
-Permite autenticarse, buscar películas mediante OMDb, agregarlas a favoritos, calificarlas, filtrarlas y ordenarlas.
+Permite autenticarse, buscar películas en OMDb, guardarlas como favoritas, calificarlas, filtrarlas y ordenarlas.
+
+Esta versión del repo usa un **backend serverless** (Serverless Framework + Python) en lugar de Django. El frontend React se mantiene. En local, la API se emula con `serverless-offline` y MySQL corre en Docker; no hay Redis ni Nginx.
+
+El detalle interno del backend (handlers, JWT, caché, SQL) está en [`server/GUIA_RAPIDA.md`](server/GUIA_RAPIDA.md).
+
+## Ramas
+
+Hay **dos backends** en el mismo repositorio, cada uno en su rama:
+
+| Rama | Qué es |
+|---|---|
+| `master` | Versión original: Django + DRF + Redis + Docker Compose (frontend, backend, MySQL, Redis, Nginx). |
+| `serverless` | Esta versión: Python + Serverless Framework, MySQL en Docker, API local con `serverless-offline`. |
+
+El nombre `serverless` encaja bien: es corto, dice el cambio de arquitectura y no se confunde con `master`.
+
+Este README documenta **`serverless`**. Si estás en `master`, las instrucciones de abajo (venv, `serverless offline`, `server/.env`) no aplican.
+
+### Cómo cambiar de rama
+
+Si el repo **ya está clonado**:
+
+```bash
+git fetch origin
+git switch serverless
+```
+
+(`git checkout serverless` hace lo mismo en Git más viejo.)
+
+Si la rama aún no existe en tu máquina pero sí en GitHub:
+
+```bash
+git fetch origin
+git switch -c serverless --track origin/serverless
+```
+
+Para volver a Django:
+
+```bash
+git switch master
+```
+
+Git no deja cambiar de rama si tienes cambios sin guardar. O los commiteas en la rama actual, o los apartas:
+
+```bash
+git stash push -u -m "wip"
+git switch serverless
+```
+
+### Clonar directo en esta versión
+
+```bash
+git clone -b serverless https://github.com/SntgRM/settflix.git
+cd settflix
+```
+
+## Qué puedes hacer
+
+- Iniciar sesión (JWT access + refresh; el refresh rota y se invalida al reusar o al cerrar sesión).
+- Buscar películas por texto, con paginación, a través del backend (el cliente **no** llama a OMDb).
+- Agregar / quitar favoritas, poner nota 1–5, filtrar y ordenar la lista.
+- Las favoritas son por usuario: nadie ve ni edita las de otro.
+
+No hay registro público. Los usuarios se crean con un script.
 
 ## Stack
 
-### Frontend
+### Frontend (`client/`)
+
 - React 19
 - Vite
 - Tailwind CSS 4
 - Axios
-- React Router
+- React Router 7
 - JavaScript / JSX
 
-### Backend
-- Python
-- Django 5.2
-- Django REST Framework
-- SimpleJWT
-- MySQL 8
-- Redis
+### Backend (`server/`)
 
-### Infraestructura
-- Docker
-- Docker Compose
-- Nginx
+- Python 3.13
+- [Serverless Framework](https://www.serverless.com/) 4 (AWS Lambda + HTTP API)
+- `serverless-offline` (API local en el puerto 8000)
+- PyMySQL + MySQL 8
+- PyJWT (access 1 h, refresh 7 días, mismos claims que SimpleJWT)
+- OMDb (`urllib`, sin `requests`)
+- Caché de OMDb en memoria + tabla MySQL (sin Redis)
+
+### Infraestructura local
+
+- Docker / Docker Compose **solo para MySQL**
+- El frontend y la API corren en el host (Node + Python)
 
 ## Estructura
 
 ```text
-settflix/
-├── client/              # Frontend React
-├── server/              # Backend Django
-├── .env.example         # Variables de entorno de ejemplo
-├── docker-compose.yml
-├── schema.sql           # Estructura de la base de datos
+settflix-serverless-framework/
+├── client/                 # Frontend React + Vite
+├── server/                 # Backend serverless
+│   ├── serverless.yml      # Rutas, CORS, env, 7 funciones Lambda
+│   ├── src/handlers/       # Endpoints (auth, movies, favorites, health)
+│   ├── src/common/         # Request/JWT/MySQL/OMDb/caché
+│   ├── db/schema.sql       # Tablas (se carga al crear el volumen de MySQL)
+│   ├── scripts/            # create_user.py, envfile.py
+│   ├── tests/              # Pruebas de integración
+│   └── docker-compose.yml  # MySQL 8
+├── .env.example            # Plantilla de variables
 └── README.md
 ```
 
 ## Requisitos
 
-Para ejecutar el proyecto con Docker únicamente se necesita:
-
 - Git
-- Docker Desktop
-
-No es necesario instalar manualmente Python, Node.js, MySQL o Redis.
+- Docker Desktop (MySQL)
+- Node.js (Vite + Serverless CLI / offline)
+- Python 3.13
+- Una [API key de OMDb](https://www.omdbapi.com/apikey.aspx)
 
 ## Configuración
 
-Clonar el repositorio:
-
 ```bash
-git clone https://github.com/SntgRM/settflix.git
+git clone -b serverless https://github.com/SntgRM/settflix.git
 cd settflix
 ```
 
-Crear el archivo `.env` a partir de la plantilla:
+Si ya clonaste sin `-b`, entra al directorio y `git switch serverless` (hace falta que la rama exista en `origin`).
+
+Copia la plantilla **al backend** (Compose y `serverless.yml` leen `server/.env`):
 
 **Windows PowerShell**
+
 ```powershell
-Copy-Item .env.example .env
+Copy-Item .env.example server\.env
 ```
 
-**Linux/macOS**
+**Linux / macOS**
+
 ```bash
-cp .env.example .env
+cp .env.example server/.env
 ```
 
-Configurar la API Key de OMDb en `.env`:
+El frontend lee `VITE_API_URL` desde `client/.env`:
+
+**Windows PowerShell**
+
+```powershell
+"VITE_API_URL=http://localhost:8000/api" | Set-Content client\.env
+```
+
+**Linux / macOS**
+
+```bash
+echo "VITE_API_URL=http://localhost:8000/api" > client/.env
+```
+
+En `server/.env` pon al menos:
 
 ```env
-OMDB_API_KEY=your_omdb_api_key
+SECRET_KEY=una-clave-larga-y-aleatoria
+DB_PASSWORD=...
+DB_ROOT_PASSWORD=...
+OMDB_API_KEY=tu_omdb_api_key
 ```
 
-El resto de variables necesarias están documentadas en `.env.example`.
+`SECRET_KEY` firma los JWT. Si falta, el backend no arranca.
 
-### Variables principales
+El `.env` no va a Git. `.env.example` es solo la plantilla.
+
+### Variables que usa esta versión
 
 ```dotenv
-SECRET_KEY=change-this-secret-key
-DEBUG=True
-
+SECRET_KEY=
 DB_NAME=settflix_db
 DB_USER=settflix_user
-DB_PASSWORD=change-this-db-password
-DB_ROOT_PASSWORD=change-this-root-password
-DB_HOST=db
+DB_PASSWORD=
+DB_ROOT_PASSWORD=
+DB_HOST=127.0.0.1
 DB_PORT=3306
-
-CORS_ALLOWED_ORIGINS=http://localhost:3000,http://127.0.0.1:3000
-ALLOWED_HOSTS=localhost,127.0.0.1,backend
-
 OMDB_BASE_URL=https://www.omdbapi.com/
-OMDB_API_KEY=your-omdb-api-key
-OMDB_CACHE_TTL=900
-
-REDIS_URL=redis://redis:6379/1
-
-DJANGO_SUPERUSER_USERNAME=admin
-DJANGO_SUPERUSER_PASSWORD=change-this-password
-DJANGO_SUPERUSER_EMAIL=admin@example.com
-
-VITE_API_URL=http://localhost:8000/api
-```
-
-> **Nota:** `DB_HOST` y `REDIS_URL` usan los nombres de los servicios definidos en `docker-compose.yml` (`db` y `redis`), no `127.0.0.1` ni `localhost`, ya que los contenedores se comunican entre sí a través de la red interna de Docker.
->
-> El `.env` real no se incluye en el repositorio porque contiene credenciales y claves privadas. `.env.example` sirve únicamente como plantilla — reemplaza `SECRET_KEY`, las contraseñas de la base de datos, `DJANGO_SUPERUSER_PASSWORD` y `OMDB_API_KEY` por valores propios antes de usar en producción. En producción, además, `DEBUG` debe establecerse en `False`.
-
-## Docker
-
-Levantar todo el proyecto:
-
-```bash
-docker compose up --build
-```
-
-**Frontend:** [http://localhost:3000](http://localhost:3000)
-
-**Backend:** [http://localhost:8000](http://localhost:8000)
-
-Docker se encarga de levantar:
-
-- Frontend
-- Backend
-- MySQL
-- Redis
-
-No es necesario crear manualmente una base de datos o un usuario de MySQL para ejecutar el proyecto mediante Docker. Los valores de `DB_NAME`, `DB_USER`, `DB_PASSWORD` y `DB_ROOT_PASSWORD` se utilizan para configurar el contenedor de MySQL.
-
-MySQL Workbench es opcional y únicamente sirve como cliente para inspeccionar la base de datos.
-
-## Base de datos
-
-Django utiliza migraciones para crear las tablas necesarias.
-
-La base de datos incluye las tablas propias de Django, autenticación/JWT y la tabla de películas favoritas.
-
-El archivo `schema.sql` contiene la estructura de la base de datos sin los registros actuales.
-
-Puede generarse nuevamente con:
-
-```bash
-docker compose exec db mysqldump -u root -p --no-data --routines=false --triggers=false settflix_db > schema.sql
-```
-
-## Redis y OMDb
-
-Redis se utiliza para almacenar temporalmente las búsquedas de OMDb.
-
-```env
+OMDB_API_KEY=
 OMDB_CACHE_TTL=900
 ```
 
-Esto representa 15 minutos de caché.
+`DB_HOST=127.0.0.1` porque `serverless offline` corre **en tu máquina** y entra a MySQL por el puerto publicado. No uses el hostname `db` (ese nombre solo existiría entre contenedores).
 
-El backend es responsable de comunicarse con OMDb; el frontend no consume directamente la API externa.
+CORS está en `server/serverless.yml` (`httpApi.cors`), no en el `.env`. Orígenes permitidos: `localhost` / `127.0.0.1` en puertos **3000** y **5173**.
 
-## entrypoint.sh en Windows
+## Cómo ponerlo a correr
 
-El backend utiliza `entrypoint.sh` durante el inicio del contenedor.
+Tres procesos: MySQL, API, frontend.
 
-Si el proyecto se modifica o clona desde Windows, es importante verificar que este archivo utilice finales de línea **LF** y no **CRLF**.
-
-Un archivo `entrypoint.sh` en formato CRLF puede provocar errores como:
-
-```
-no such file or directory
-```
-
-aunque el archivo exista.
-
-En VS Code:
-
-```
-CRLF → LF
-```
-
-Después de realizar el cambio, reconstruir las imágenes:
+### 1. MySQL
 
 ```bash
-docker compose down -v
-docker compose build --no-cache
-docker compose up
+cd server
+docker compose up -d --wait
 ```
 
-> El flag `-v` elimina los volúmenes, incluyendo los datos persistidos de MySQL, por lo que solamente debe utilizarse cuando se quiera iniciar con una base de datos limpia.
+Compose crea la base, el usuario y ejecuta `db/schema.sql` la primera vez que existe el volumen.
+
+Tablas: `auth_user`, `favoritas`, `jwt_blacklist`, `omdb_cache`.
+
+### 2. Backend (API en :8000)
+
+```bash
+cd server
+python -m venv .venv
+```
+
+**Windows PowerShell:** `.\.venv\Scripts\Activate.ps1`  
+**Linux / macOS:** `source .venv/bin/activate`
+
+```bash
+pip install -r requirements.txt
+npm install
+npx serverless offline
+```
+
+Comprueba: [http://localhost:8000/api/health/](http://localhost:8000/api/health/) → `{"status":"ok"}`.
+
+Crea un usuario (venv activo, MySQL arriba):
+
+```bash
+python scripts/create_user.py admin admin123 --email admin@example.com --superuser
+```
+
+Si el username ya existe, actualiza contraseña y email.
+
+### 3. Frontend (Vite, :5173 por defecto)
+
+En otra terminal:
+
+```bash
+cd client
+npm install
+npm run dev
+```
+
+Abre [http://localhost:5173](http://localhost:5173) e inicia sesión con el usuario del script.
+
+Scripts npm del backend (`server/package.json`): `npm run db:up`, `db:down`, `offline`, `test`.
+
+## API (contrato del frontend)
+
+Base: `http://localhost:8000/api`
+
+| Método | Ruta | Auth |
+|---|---|---|
+| GET | `/health/` | no |
+| POST | `/auth/login/` | no |
+| POST | `/auth/token/refresh/` | refresh en el body |
+| POST | `/auth/logout/` | Bearer access + refresh en el body |
+| GET | `/movies/search/?q=&page=` | Bearer access |
+| GET, POST | `/favorites/` | Bearer access |
+| GET, PUT, PATCH, DELETE | `/favorites/{id}/` | Bearer access |
+
+Las rutas llevan `/` final.
+
+## Caché de OMDb
+
+Sin Redis. TTL por defecto 15 minutos (`OMDB_CACHE_TTL=900`):
+
+1. Memoria del proceso (rápida; se pierde si el proceso se reinicia).
+2. Tabla `omdb_cache` (compartida y persistente).
+
+Solo el backend habla con OMDb.
+
+## Pruebas
+
+MySQL arriba, venv activo, `server/.env` cargado:
+
+```bash
+cd server
+python -m unittest discover -s tests -v
+```
+
+Invocan los handlers con eventos falsos de API Gateway contra la BD real. OMDb está mockeado (no gasta cuota). Crean y borran el usuario `__test_user__`.
 
 ## Seguridad
 
-No subir nunca el archivo:
+- No subas `.env`, `server/.env` ni `client/.env`.
+- No imprimas `OMDB_API_KEY` (viaja en la query hacia OMDb).
+- En AWS real los secretos irían en el proveedor de secretos / parámetros, no en un archivo local.
 
-```
-.env
-```
+Esta copia está pensada para **desarrollo local**. Un deploy real a Lambda + API Gateway implica red, IAM y cómo llega Lambda a MySQL; no forma parte de este flujo de arranque.
 
-al repositorio.
+## Ejecución desde cero (checklist)
 
-Las credenciales, API keys y `SECRET_KEY` reales deben permanecer fuera de Git.
-
-El repositorio incluye únicamente `.env.example` con valores de ejemplo.
-
-## Ejecución desde cero
-
-Para comprobar que el proyecto puede ejecutarse en un entorno limpio:
-
-```bash
-git clone https://github.com/SntgRM/settflix.git
-cd settflix
-```
-
-Crear `.env`, configurar `OMDB_API_KEY` y ejecutar:
-
-```bash
-docker compose build --no-cache
-docker compose up
-```
+1. Clonar el repo.
+2. Copiar `.env.example` → `server/.env` y rellenar `SECRET_KEY`, contraseñas y `OMDB_API_KEY`.
+3. Crear `client/.env` con `VITE_API_URL=http://localhost:8000/api`.
+4. `cd server && docker compose up -d --wait`
+5. Crear venv, `pip install -r requirements.txt`, `npm install`, `npx serverless offline`
+6. `python scripts/create_user.py ...`
+7. `cd client && npm install && npm run dev`
+8. Entrar a [http://localhost:5173](http://localhost:5173)
